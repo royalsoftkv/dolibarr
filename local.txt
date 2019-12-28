@@ -1,0 +1,2 @@
+Local Dolibarr instance
+version 9.0.3

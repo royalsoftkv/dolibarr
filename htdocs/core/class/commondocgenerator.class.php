@@ -518,6 +518,11 @@ abstract class CommonDocGenerator
 		global $conf;
 
 		$resarray= array(
+
+			//royalsoft
+			'line_rang'=>$line->rang,
+			//royalsoft
+
 			'line_fulldesc'=>doc_getlinedesc($line,$outputlangs),
 			'line_product_ref'=>$line->product_ref,
 			'line_product_ref_fourn'=>$line->ref_fourn, // for supplier doc lines
@@ -746,6 +751,13 @@ abstract class CommonDocGenerator
 				$object->array_options['options_'.$key.'_currency'] = price($object->array_options['options_'.$key],0,$outputlangs,0,0,-1,$conf->currency);
 				//Add value to store price with currency
 				$array_to_fill=array_merge($array_to_fill,array($array_key.'_options_'.$key.'_currency' => $object->array_options['options_'.$key.'_currency']));
+
+				//royalsoft
+				$object->array_options['options_'.$key.'_locale'] = price($object->array_options['options_'.$key],0,$outputlangs);
+				$array_to_fill=array_merge($array_to_fill,array($array_key.'_options_'.$key.'_locale' => $object->array_options['options_'.$key.'_locale']));
+				//royalsoft
+
+
 			}
 			else if($extrafields->attribute_type[$key] == 'select' || $extrafields->attribute_type[$key] == 'checkbox')
 			{
@@ -800,7 +812,15 @@ abstract class CommonDocGenerator
 						}
 					}
 				}
+
 			}
+
+			//royalsoft
+			else if($extrafields->attribute_type[$key] == 'double') {
+				$object->array_options['options_'.$key.'_locale'] = price($object->array_options['options_'.$key],0,$outputlangs);
+				$array_to_fill=array_merge($array_to_fill,array($array_key.'_options_'.$key.'_locale' => $object->array_options['options_'.$key.'_locale']));
+			}
+			//royalsoft
 
 			$array_to_fill=array_merge($array_to_fill,array($array_key.'_options_'.$key => $object->array_options['options_'.$key]));
 		}

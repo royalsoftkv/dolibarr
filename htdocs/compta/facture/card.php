@@ -2296,6 +2296,9 @@ if (empty($reshook))
 		exit();
 	}
 
+
+
+
 	// Outing situation invoice from cycle
 	elseif ($action == 'confirm_situationout' && $confirm == 'yes' && $usercancreate)
 	{
@@ -2495,6 +2498,134 @@ if (empty($reshook))
 	        }
 	    }
 	}
+
+	//royalsoft
+    else if ($action=="set_course") {
+
+
+
+		if(!empty($object->array_options['options_payed_date'])) {
+			$date = $object->array_options['options_payed_date'];
+		} else {
+			$date = $object->date;
+		}
+
+		$date = date("d.m.Y.",$date);
+		$year = date("Y",$date);
+
+        $url = "http://www.nbs.rs/kursnaListaModul/srednjiKurs.faces?date=".$date."&listno=&year=".$year."&listtype=3&lang=lat";
+
+		$curl = curl_init();
+        curl_setopt($curl, CURLOPT_URL, $url);
+        curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
+        // you may set this options if you need to follow redirects. Though I didn't get any in your case
+        curl_setopt($curl, CURLOPT_FOLLOWLOCATION, true);
+        $content = curl_exec($curl);
+        curl_close($curl);
+
+        require_once dol_buildpath('/lib/phpQuery/phpQuery.php');
+        $doc = phpQuery::newDocumentHTML($content);
+        $currency_table = array();
+        $table = $doc->find("table:eq(1)");
+        $tbody = $table->find("tbody");
+        $trs = $tbody->find("tr");
+        foreach($trs as $tr) {
+            $tds = pq($tr)->find("td");
+            $currency = pq($tds->get(2))->text();
+            $count = pq($tds->get(3))->text();
+            $rate = pq($tds->get(4))->text();
+            $rate = price2num($rate);
+            $rate = $rate / $count;
+            $currency_table[$currency]=$rate;
+        }
+
+        $course=$currency_table["EUR"];
+
+        $object->array_options['options_course']=price2num($course);
+
+        $object->fetch_lines();
+
+        $total_eur=0;
+        foreach($object->lines as $line) {
+            $line->fetch_optionals();
+            //print_r($line->array_options);
+            $line_price=$line->array_options['options_line_price'];
+            $line->subprice = $line_price*$course;
+            $line->array_options['options_line_price_total']=$line_price*$line->qty;
+            $object->updateline($line->id, $line->desc, $line->subprice, $line->qty, $line->remise_percent, $line->date_start, $line->date_end, $line->tva_tx,
+            $txlocaltax1=0, $txlocaltax2=0, $price_base_type='HT', $info_bits=0, $type= 0, $fk_parent_line=0, $skip_update_total=0,
+            $fk_fournprice=null,$pa_ht=0, $label='', $special_code=0, $line->array_options, 100);
+            $total_eur+=$line_price*$line->qty;
+
+        }
+
+        $object->array_options['options_price_eur']=$total_eur;
+        $object->insertExtraFields();
+
+
+        //header("location: ".$_SERVER['PHP_SELF']."?facid=".$object->id);
+        //exit();
+
+
+    } elseif ($action=="set_literal") {
+        $broj=$object->total_ht;
+
+        $sZeroValue  = 'nula dinara';
+        $StotiFormat = ' i %2.0f/100';
+        $Jedinice[0]=array('', 'jedna', 'dve', 'tri', 'četiri',
+            'pet', 'šest', 'sedam', 'osam', 'devet',
+            'deset', 'jedanaest', 'dvanaest', 'trinaest', 'četrnaest',
+            'petnaest', 'šesnaest', 'sedamnaest', 'osamnaest', 'devetnaest');
+        $Jedinice[1]=array('', 'jedan', 'dva', 'tri', 'četiri',
+            'pet', 'šest', 'sedam', 'osam', 'devet',
+            'deset', 'jedanaest', 'dvanaest', 'trinaest', 'četrnaest',
+            'petnaest', 'šesnaest', 'sedamnaest', 'osamnaest', 'devetnaest');
+        $Desetice= array ('','','dvadeset', 'trideset', 'četrdeset', 'pedeset',
+            'šezdeset', 'sedamdeset', 'osamdeset', 'devedeset');
+        $Stotine= array ('', 'sto', 'dvesta', 'trista', 'četirsto',
+            'petsto', 'šesto', 'sedamsto', 'osamsto', 'devetsto');
+        $Prilozi[1]= array("-1"=>' dinar', 'a', '', 'a', 'a', 'a', 'a');
+        $Prilozi[2]= array("-1"=>'hiljad', 'a', 'a', 'e', 'e', 'e', 'a');
+        $Prilozi[3]= array("-1"=>'milion', 'a', '', 'a', 'a', 'a', 'a');
+        $Prilozi[4]= array("-1"=>'milijard', 'i', 'a', 'e', 'e', 'e', 'i');
+        $SignPrefix=array('', 'minus ');
+
+        $eCeo=abs(floor($broj));
+            $eStoti=substr(number_format($broj,2),-2);
+        if (!$broj || !$eCeo)
+                $out = $sZeroValue;
+        $res='';
+        $s=number_format($eCeo,0,'.','');
+        while ((strlen($s)%3)!=0) {
+            $s='0'.$s;
+        };
+        for ($x=1;$x<=4;$x++) {
+            $trojka=substr($s,strlen($s)-3,3);
+            $s=substr($s,0,strlen($s)-3);
+            if ($trojka=='') $trojka='000';
+            if ($trojka!='000') {
+                if (($trojka[1]=='0') || ($trojka[1]=='1'))
+                    $temp=$Jedinice[$x % 2][($trojka[1].$trojka[2])*1];
+                else
+                    $temp=$Desetice[$trojka[1]].$Jedinice[$x %2][$trojka[2]*1];
+                $temp=$Stotine[$trojka[0]].$temp;
+                if ((1*$trojka[1].$trojka[2])<=5)
+                    $temp.=$Prilozi[$x][-1].$Prilozi[$x][1*($trojka[1].$trojka[2])];
+                else
+                    $temp.=$Prilozi[$x][-1].$Prilozi[$x][5];
+                $res=$temp.$res;
+            }
+        };
+        $out=$res.' i '.$eStoti.'/100';
+
+
+        $object->array_options['options_literal_price']=$out;
+        $object->insertExtraFields();
+        //header("location: ".$_SERVER['PHP_SELF']."?facid=".$object->id);
+        //exit();
+
+	}
+	//royalsoft
 
 	// Actions when printing a doc from card
 	include DOL_DOCUMENT_ROOT.'/core/actions_printing.inc.php';
@@ -4641,6 +4772,10 @@ else if ($id > 0 || ! empty($ref))
 	if ($action != 'prerelance' && $action != 'presend' && $action != 'valid' && $action != 'editline')
 	{
 		print '<div class="tabsAction">';
+
+		//royalsoft
+		echo '<div class="inline-block divButAction"><a class="butAction" href="'.$_SERVER['PHP_SELF'].'?facid='.$object->id.'&action=set_course">Izracunaj kurs</a></div>';
+		echo '<div class="inline-block divButAction"><a class="butAction" href="'.$_SERVER['PHP_SELF'].'?facid='.$object->id.'&action=set_literal">Izracunaj slovima</a></div>';
 
 		$parameters = array();
 		$reshook = $hookmanager->executeHooks('addMoreActionsButtons', $parameters, $object, $action); // Note that $action and $object may have been modified by hook
