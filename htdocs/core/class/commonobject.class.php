@@ -2127,6 +2127,42 @@ abstract class CommonObject
 		}
 	}
 
+	//royalsoft - fetch currency
+	public function fetchCurrency($date) {
+		$date = date("d.m.Y.", $date);
+		$year = date("Y", $date);
+
+		$url = "http://www.nbs.rs/kursnaListaModul/srednjiKurs.faces?date=" . $date . "&listno=&year=" . $year . "&listtype=3&lang=lat";
+
+		$curl = curl_init();
+		curl_setopt($curl, CURLOPT_URL, $url);
+		curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
+		// you may set this options if you need to follow redirects. Though I didn't get any in your case
+		curl_setopt($curl, CURLOPT_FOLLOWLOCATION, true);
+		$content = curl_exec($curl);
+		curl_close($curl);
+
+		require_once dol_buildpath('/lib/phpQuery/phpQuery.php');
+		$doc = phpQuery::newDocumentHTML($content);
+		$currency_table = array();
+		$table = $doc->find("table:eq(1)");
+		$tbody = $table->find("tbody");
+		$trs = $tbody->find("tr");
+		foreach ($trs as $tr) {
+			$tds = pq($tr)->find("td");
+			$currency = pq($tds->get(2))->text();
+			$count = pq($tds->get(3))->text();
+			$rate = pq($tds->get(4))->text();
+			$rate = price2num($rate);
+			$rate = $rate / $count;
+			$currency_table[$currency] = $rate;
+		}
+
+		$course = $currency_table["EUR"];
+		return $course;
+	}
+	//royalsoft
+
 	/**
 	 *  Change the payments terms
 	 *

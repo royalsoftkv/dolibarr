@@ -268,6 +268,10 @@ class doc_generic_invoice_odt extends ModelePDFFactures
 
 				$newfiletmp = $objectref.'_'.$newfiletmp;
 
+				//royalsoft - display only object ref
+				$newfiletmp = $objectref;
+				//royalsoft
+
 				// Get extension (ods or odt)
 				$newfileformat = substr($newfile, strrpos($newfile, '.') + 1);
 				if (!empty($conf->global->MAIN_DOC_USE_TIMING))

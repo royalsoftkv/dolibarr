@@ -671,7 +671,10 @@ IMG;
 				throw new OdfException("headers already sent ($filename at $linenum)");
 			}
 
-			if (!empty($conf->global->MAIN_DISABLE_PDF_AUTOUPDATE)) {
+			//royalsoft - do not allow auto download
+			if (!empty($conf->global->MAIN_DISABLE_PDF_AUTOUPDATE) && false) {
+			//royalsoft
+
 				$name=preg_replace('/\.od(x|t)/i', '', $name);
 				header('Content-type: application/pdf');
 				header('Content-Disposition: attachment; filename="'.$name.'.pdf"');

@@ -4726,6 +4726,11 @@ class Form
 			if (!empty($rate))
 			{
 				print price($rate, 1, $langs, 1, 0);
+
+				//royalsoft - display inverted rate
+				print " (".round(1/$rate,4).")";
+				//royalsoft
+
 				if ($currency && $rate != 1) print ' &nbsp; ('.price($rate, 1, $langs, 1, 0).' '.$currency.' = 1 '.$conf->currency.')';
 			}
 			else

@@ -2496,70 +2496,48 @@ if (empty($reshook))
     else if ($action=="set_course") {
 
 
-
-		if(!empty($object->array_options['options_payed_date'])) {
+		if (!empty($object->array_options['options_payed_date'])) {
 			$date = $object->array_options['options_payed_date'];
 		} else {
 			$date = $object->date;
 		}
 
-		$date = date("d.m.Y.",$date);
-		$year = date("Y",$date);
+		$course = $object->fetchCurrency($date);
 
-        $url = "http://www.nbs.rs/kursnaListaModul/srednjiKurs.faces?date=".$date."&listno=&year=".$year."&listtype=3&lang=lat";
+		$object->array_options['options_course'] = price2num($course);
 
-		$curl = curl_init();
-        curl_setopt($curl, CURLOPT_URL, $url);
-        curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
-        // you may set this options if you need to follow redirects. Though I didn't get any in your case
-        curl_setopt($curl, CURLOPT_FOLLOWLOCATION, true);
-        $content = curl_exec($curl);
-        curl_close($curl);
+		$object->fetch_lines();
 
-        require_once dol_buildpath('/lib/phpQuery/phpQuery.php');
-        $doc = phpQuery::newDocumentHTML($content);
-        $currency_table = array();
-        $table = $doc->find("table:eq(1)");
-        $tbody = $table->find("tbody");
-        $trs = $tbody->find("tr");
-        foreach($trs as $tr) {
-            $tds = pq($tr)->find("td");
-            $currency = pq($tds->get(2))->text();
-            $count = pq($tds->get(3))->text();
-            $rate = pq($tds->get(4))->text();
-            $rate = price2num($rate);
-            $rate = $rate / $count;
-            $currency_table[$currency]=$rate;
-        }
+		$total_eur = 0;
+		foreach ($object->lines as $line) {
+			$line->fetch_optionals();
+			//print_r($line->array_options);
+			$line_price = $line->array_options['options_line_price'];
+			$line->subprice = $line_price * $course;
+			$line->array_options['options_line_price_total'] = $line_price * $line->qty;
+			$object->updateline($line->id, $line->desc, $line->subprice, $line->qty, $line->remise_percent, $line->date_start, $line->date_end, $line->tva_tx,
+				$txlocaltax1 = 0, $txlocaltax2 = 0, $price_base_type = 'HT', $info_bits = 0, $type = 0, $fk_parent_line = 0, $skip_update_total = 0,
+				$fk_fournprice = null, $pa_ht = 0, $label = '', $special_code = 0, $line->array_options, 100);
+			$total_eur += $line_price * $line->qty;
 
-        $course=$currency_table["EUR"];
+		}
 
-        $object->array_options['options_course']=price2num($course);
-
-        $object->fetch_lines();
-
-        $total_eur=0;
-        foreach($object->lines as $line) {
-            $line->fetch_optionals();
-            //print_r($line->array_options);
-            $line_price=$line->array_options['options_line_price'];
-            $line->subprice = $line_price*$course;
-            $line->array_options['options_line_price_total']=$line_price*$line->qty;
-            $object->updateline($line->id, $line->desc, $line->subprice, $line->qty, $line->remise_percent, $line->date_start, $line->date_end, $line->tva_tx,
-            $txlocaltax1=0, $txlocaltax2=0, $price_base_type='HT', $info_bits=0, $type= 0, $fk_parent_line=0, $skip_update_total=0,
-            $fk_fournprice=null,$pa_ht=0, $label='', $special_code=0, $line->array_options, 100);
-            $total_eur+=$line_price*$line->qty;
-
-        }
-
-        $object->array_options['options_price_eur']=$total_eur;
-        $object->insertExtraFields();
+		$object->array_options['options_price_eur'] = $total_eur;
+		$object->insertExtraFields();
 
 
-        //header("location: ".$_SERVER['PHP_SELF']."?facid=".$object->id);
-        //exit();
+		//header("location: ".$_SERVER['PHP_SELF']."?facid=".$object->id);
+		//exit();
+	} else if ($action=="fetch_currency") {
+		if (!empty($object->array_options['options_payed_date'])) {
+			$date = $object->array_options['options_payed_date'];
+		} else {
+			$date = $object->date;
+		}
+    	$rate = $object->fetchCurrency($date);
+		$result = $object->setMulticurrencyRate(price2num(1/$rate), 1);
 
-
+	//royalsoft
     } elseif ($action=="set_literal") {
         $broj=$object->total_ht;
 
@@ -4226,6 +4204,13 @@ elseif ($id > 0 || !empty($ref))
 					print '<div class="inline-block"> &nbsp; &nbsp; &nbsp; &nbsp; ';
 					print '<a href="'.$_SERVER["PHP_SELF"].'?id='.$object->id.'&action=actualizemulticurrencyrate">'.$langs->trans("ActualizeCurrency").'</a>';
 					print '</div>';
+
+					//royalsoft - display inverted rate
+					print ' | ';
+					print '<div class="inline-block">';
+					print '<a href="'.$_SERVER["PHP_SELF"].'?id='.$object->id.'&action=fetch_currency">'.$langs->trans("Fetch").'</a>';
+					print '</div>';
+					//royalsoft
 				}
 			}
 			print '</td></tr>';
