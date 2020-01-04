@@ -29,15 +29,15 @@ require_once DOL_DOCUMENT_ROOT.'/core/class/html.formfile.class.php';
 
 $langs->load("admin");
 
-$action=GETPOST('action','alpha');
+$action=GETPOST('action', 'alpha');
 
-$sortfield = GETPOST('sortfield','alpha');
-$sortorder = GETPOST('sortorder','alpha');
-$page = GETPOST('page','int');
+$sortfield = GETPOST('sortfield', 'alpha');
+$sortorder = GETPOST('sortorder', 'alpha');
+$page = GETPOST('page', 'int');
 if (! $sortorder) $sortorder="DESC";
 if (! $sortfield) $sortfield="date";
 if (empty($page) || $page == -1) { $page = 0; }
-$limit = GETPOST('limit','int')?GETPOST('limit','int'):$conf->liste_limit;
+$limit = GETPOST('limit', 'int')?GETPOST('limit', 'int'):$conf->liste_limit;
 $offset = $limit * $page;
 
 if (! $user->admin)
@@ -50,10 +50,20 @@ if (! $user->admin)
 
 if ($action == 'delete')
 {
-	$file=$conf->admin->dir_output.'/backup/'.basename(GETPOST('urlfile', 'alpha'));
-    $ret=dol_delete_file($file, 1);
-    if ($ret) setEventMessages($langs->trans("FileWasRemoved", GETPOST('urlfile')), null, 'mesgs');
-    else setEventMessages($langs->trans("ErrorFailToDeleteFile", GETPOST('urlfile')), null, 'errors');
+	if (preg_match('/^backup\//', GETPOST('urlfile', 'alpha')))
+	{
+		$file=$conf->admin->dir_output.'/backup/'.basename(GETPOST('urlfile', 'alpha'));
+		$ret=dol_delete_file($file, 1);
+		if ($ret) setEventMessages($langs->trans("FileWasRemoved", GETPOST('urlfile')), null, 'mesgs');
+		else setEventMessages($langs->trans("ErrorFailToDeleteFile", GETPOST('urlfile')), null, 'errors');
+	}
+	else
+	{
+		$file=$conf->admin->dir_output.'/documents/'.basename(GETPOST('urlfile', 'alpha'));
+		$ret=dol_delete_file($file, 1);
+		if ($ret) setEventMessages($langs->trans("FileWasRemoved", GETPOST('urlfile')), null, 'mesgs');
+		else setEventMessages($langs->trans("ErrorFailToDeleteFile", GETPOST('urlfile')), null, 'errors');
+	}
     $action='';
 }
 
@@ -70,7 +80,7 @@ $type=$db->type;
 //var_dump($db);
 
 $help_url='EN:Backups|FR:Sauvegardes|ES:Copias_de_seguridad';
-llxHeader('','',$help_url);
+llxHeader('', '', $help_url);
 
 ?>
 <script type="text/javascript">
@@ -110,11 +120,11 @@ jQuery(document).ready(function() {
 </script>
 <?php
 
-print load_fiche_titre($langs->trans("Backup"),'','title_setup');
+print load_fiche_titre($langs->trans("Backup"), '', 'title_setup');
 //print_barre_liste($langs->trans("Backup"), '', '', '', '', '', $langs->trans("BackupDesc",DOL_DATA_ROOT), 0, 0, 'title_setup');
 
-print '<div class="center">';
-print $langs->trans("BackupDesc",DOL_DATA_ROOT);
+print '<div class="center opacitymedium">';
+print $langs->trans("BackupDesc", DOL_DATA_ROOT);
 print '</div>';
 print '<br>';
 
@@ -128,7 +138,7 @@ print '<br>';
 <fieldset id="fieldsetexport"><legend class="legendforfieldsetstep" style="font-size: 3em">1</legend>
 
 <?php
-print $langs->trans("BackupDesc3",$dolibarr_main_db_name).'<br>';
+print $langs->trans("BackupDesc3", $dolibarr_main_db_name).'<br>';
 //print $langs->trans("BackupDescY").'<br>';
 print '<br>';
 ?>
@@ -166,7 +176,7 @@ print '<tr '.$bc[false].'><td style="padding-left: 8px">';
 			</div>
 			<?php
 		}
-		else if (in_array($type, array('pgsql')))
+		elseif (in_array($type, array('pgsql')))
 		{
 			?>
 			<div class="formelementrow"><input type="radio" name="what"	value="postgresql" id="radio_dump_postgresql" />
@@ -211,7 +221,6 @@ print '<tr '.$bc[false].'><td style="padding-left: 8px">';
 			<div class="formelementrow"><input type="checkbox"
 				name="use_transaction" value="yes" id="checkbox_use_transaction" /> <label
 				for="checkbox_use_transaction"> <?php echo $langs->trans("UseTransactionnalMode"); ?></label>
-
 			</div>
 
 			<?php if (! empty($conf->global->MYSQL_OLD_OPTION_DISABLE_FK)) { ?>
@@ -234,6 +243,14 @@ print '<tr '.$bc[false].'><td style="padding-left: 8px">';
 				<option value="ORACLE">ORACLE</option>
 				<option value="POSTGRESQL">POSTGRESQL</option>
 			</select> <br>
+				<input type="checkbox" name="use_mysql_quick_param" value="yes" id="checkbox_use_quick" />
+				<label for="checkbox_use_quick">
+					<?php echo $form->textwithpicto(
+						$langs->trans('ExportUseMySQLQuickParameter'),
+						$langs->trans('ExportUseMySQLQuickParameterHelp')
+					); ?>
+				</label>
+				<br/>
 			<!-- <input type="checkbox" name="drop_database" value="yes"
 				id="checkbox_drop_database" /> <label for="checkbox_drop_database"><?php echo $langs->trans("AddDropDatabase"); ?></label>
 			-->
@@ -446,8 +463,10 @@ print "\n";
 
 
 <br>
-<div align="center"><input type="submit" class="button"
-	value="<?php echo $langs->trans("GenerateBackup") ?>" id="buttonGo" /><br>
+<div class="center">
+	<input type="submit" class="button reposition" value="<?php echo $langs->trans("GenerateBackup") ?>" id="buttonGo">
+	<input type="hidden" name="page_y" value="<?php echo GETPOST('page_y', 'int'); ?>">
+	<br>
 <br>
 
 <?php
@@ -459,7 +478,7 @@ if (! empty($_SESSION["commandbackuplastdone"]))
 
     //print $paramclear;
 
-    // Now run command and show result
+    // Now show result
     print '<b>'.$langs->trans("BackupResult").':</b> ';
 	print $_SESSION["commandbackupresult"];
 
@@ -469,7 +488,7 @@ if (! empty($_SESSION["commandbackuplastdone"]))
 }
 if (! empty($_SESSION["commandbackuptorun"]))
 {
-	print '<br><font class="warning">'.$langs->trans("YouMustRunCommandFromCommandLineAfterLoginToUser",$dolibarr_main_db_user,$dolibarr_main_db_user).':</font><br>'."\n";
+	print '<br><font class="warning">'.$langs->trans("YouMustRunCommandFromCommandLineAfterLoginToUser", $dolibarr_main_db_user, $dolibarr_main_db_user).':</font><br>'."\n";
 	print '<textarea id="commandbackuptoruntext" rows="'.ROWS_2.'" class="centpercent">'.$_SESSION["commandbackuptorun"].'</textarea><br>'."\n";
 	print ajax_autoselect("commandbackuptoruntext", 0);
 	print '<br>';
@@ -498,8 +517,8 @@ print '</table>';
 <div class="ficheaddleft">
 
 <?php
-$filearray=dol_dir_list($conf->admin->dir_output.'/backup','files',0,'','',$sortfield,(strtolower($sortorder)=='asc'?SORT_ASC:SORT_DESC),1);
-$result=$formfile->list_of_documents($filearray,null,'systemtools','',1,'backup/',1,0,$langs->trans("NoBackupFileAvailable"),0,$langs->trans("PreviousDumpFiles"));
+$filearray=dol_dir_list($conf->admin->dir_output.'/backup', 'files', 0, '', '', $sortfield, (strtolower($sortorder)=='asc'?SORT_ASC:SORT_DESC), 1);
+$result=$formfile->list_of_documents($filearray, null, 'systemtools', '', 1, 'backup/', 1, 0, $langs->trans("NoBackupFileAvailable"), 0, $langs->trans("PreviousDumpFiles"));
 print '<br>';
 ?>
 
@@ -519,7 +538,7 @@ print '<br>';
 <fieldset><legend class="legendforfieldsetstep" style="font-size: 3em">2</legend>
 
 <?php
-print $langs->trans("BackupDesc2",DOL_DATA_ROOT).'<br>';
+print $langs->trans("BackupDesc2", DOL_DATA_ROOT).'<br>';
 print $langs->trans("BackupDescX").'<br><br>';
 
 ?>
@@ -575,7 +594,7 @@ print "\n";
 
 ?>
 <br>
-<div align="center"><input type="submit" class="button"
+<div class="center"><input type="submit" class="button reposition"
 	value="<?php echo $langs->trans("GenerateBackup") ?>" id="buttonGo" /><br>
 <br>
 </div>
@@ -586,8 +605,8 @@ print "\n";
 <div class="ficheaddleft">
 
 <?php
-$filearray=dol_dir_list($conf->admin->dir_output.'/documents','files',0,'','',$sortfield,(strtolower($sortorder)=='asc'?SORT_ASC:SORT_DESC),1);
-$result=$formfile->list_of_documents($filearray,null,'systemtools','',1,'documents/',1,0,$langs->trans("NoBackupFileAvailable"),0,$langs->trans("PreviousDumpFiles"));
+$filearray=dol_dir_list($conf->admin->dir_output.'/documents', 'files', 0, '', '', $sortfield, (strtolower($sortorder)=='asc'?SORT_ASC:SORT_DESC), 1);
+$result=$formfile->list_of_documents($filearray, null, 'systemtools', '', 1, 'documents/', 1, 0, $langs->trans("NoBackupFileAvailable"), 0, $langs->trans("PreviousDumpFiles"));
 print '<br>';
 ?>
 
@@ -597,9 +616,6 @@ print '<br>';
 
 </fieldset>
 </form>
-
-
-
 
 <?php
 
