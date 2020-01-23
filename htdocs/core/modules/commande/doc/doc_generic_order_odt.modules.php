@@ -266,6 +266,12 @@ class doc_generic_order_odt extends ModelePDFCommandes
 				$newfiletmp = preg_replace('/template_/i', '', $newfiletmp);
 				$newfiletmp = preg_replace('/modele_/i', '', $newfiletmp);
 				$newfiletmp = $objectref.'_'.$newfiletmp;
+
+
+				//royalsoft - display only object ref
+				$newfiletmp = $langs->trans($object->element).'_'.$objectref;
+				//royalsoft
+
 				//$file=$dir.'/'.$newfiletmp.'.'.dol_print_date(dol_now(),'%Y%m%d%H%M%S').'.odt';
 				// Get extension (ods or odt)
 				$newfileformat = substr($newfile, strrpos($newfile, '.') + 1);
