@@ -269,7 +269,7 @@ class doc_generic_order_odt extends ModelePDFCommandes
 
 
 				//royalsoft - display only object ref
-				$newfiletmp = $langs->trans($object->element).'_'.$objectref;
+				$newfiletmp = $langs->trans('Order').'_'.$objectref;
 				//royalsoft
 
 				//$file=$dir.'/'.$newfiletmp.'.'.dol_print_date(dol_now(),'%Y%m%d%H%M%S').'.odt';
