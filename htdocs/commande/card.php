@@ -1406,6 +1406,16 @@ if (empty($reshook))
 	    }
 	}
 
+	//royalsoft
+	if ($action=="fetch_currency") {
+		$date = $object->date;
+		$rate = $object->fetchCurrency($date);
+		$result = $object->setMulticurrencyRate(price2num(1 / $rate), 1);
+	}
+	//royalsoft
+
+
+
 	// Actions when printing a doc from card
 	include DOL_DOCUMENT_ROOT.'/core/actions_printing.inc.php';
 
@@ -2307,6 +2317,13 @@ if ($action == 'create' && $usercancreate)
 						print '<a href="'.$_SERVER["PHP_SELF"].'?id='.$object->id.'&action=actualizemulticurrencyrate">'.$langs->trans("ActualizeCurrency").'</a>';
 						print '</div>';
 					}
+
+					//royalsoft - display inverted rate
+					print ' | ';
+					print '<div class="inline-block">';
+					print '<a href="'.$_SERVER["PHP_SELF"].'?id='.$object->id.'&action=fetch_currency">'.$langs->trans("Fetch").'</a>';
+					print '</div>';
+					//royalsoft
 				}
 				print '</td></tr>';
 			}
