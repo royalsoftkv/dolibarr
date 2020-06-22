@@ -1491,6 +1491,17 @@ if (empty($reshook))
 				setEventMessages($object->error, $object->errors, 'errors');
 			}
 		}
+		
+	} else if ($action=="fetch_currency") {
+		if (!empty($object->array_options['options_payed_date'])) {
+			$date = $object->array_options['options_payed_date'];
+		} else {
+			$date = $object->date;
+		}
+    	$rate = $object->fetchCurrency($date);
+		$result = $object->setMulticurrencyRate(price2num(1/$rate), 1);
+		
+		
 	}
 
 	// Actions when printing a doc from card
@@ -2590,6 +2601,13 @@ else
 						print '<div class="inline-block"> &nbsp; &nbsp; &nbsp; &nbsp; ';
 						print '<a href="'.$_SERVER["PHP_SELF"].'?id='.$object->id.'&action=actualizemulticurrencyrate">'.$langs->trans("ActualizeCurrency").'</a>';
 						print '</div>';
+						
+						//royalsoft - display inverted rate
+						print ' | ';	
+						print '<div class="inline-block">';
+						print '<a href="'.$_SERVER["PHP_SELF"].'?id='.$object->id.'&action=fetch_currency">'.$langs->trans("Fetch").'</a>';
+						print '</div>';
+						//royalsoft
 					}
 				}
 				print '</td></tr>';
